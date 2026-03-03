@@ -4,6 +4,116 @@ html, body {
     margin: 0;
 }
 
+/* --------------------- */
+/* ログインページ */
+/* --------------------- */
+.login-page {
+    justify-content: center;
+    align-items: center;
+}
+
+.login-container {
+    width: 90%;
+    max-width: 360px;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 16px;
+    padding: 40px 32px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.login-title {
+    margin: 0 0 28px;
+    text-align: center;
+    font-size: 1.6rem;
+    color: #1a1a1a;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.form-group input {
+    height: 44px;
+    padding: 0 12px;
+    border: 1.5px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    border-color: #0a84ff;
+}
+
+.login-error {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #e53e3e;
+    min-height: 1.2em;
+}
+
+.login-btn {
+    height: 46px;
+    background: #0a84ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.login-btn:hover {
+    background: #0070d8;
+}
+
+/* --------------------- */
+/* ヘッダー */
+/* --------------------- */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+}
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.5);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
 body {
     display: flex;
     flex-direction: column;

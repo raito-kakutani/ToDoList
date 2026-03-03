@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="やることに集中しろ!!">
+        <title>ToDo</title>
+        <link rel="stylesheet" href="style.css">
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+        <script src="supabase-client.js" defer></script>
+        <script src="app.js" defer></script>
+    </head>
+    <body>
+        <header>
+            <button id="logout-btn" class="logout-btn">ログアウト</button>
+        </header>
+
+        <aside class="sidebar">
+            <button class="tab-btn" data-tab="today">今日の予定</button>
+            <button class="tab-btn" data-tab="tomorrow">明日の予定</button>
+            <button class="tab-btn" data-tab="important">重要</button>
+            <button class="tab-btn" data-tab="normal">通常タスク</button>            
+            <div id="calendar">
+                <!-- カレンダーをここに表示 -->
+            </div>
+        </aside>
+
+        <!-- ============ -->
+        <!-- タスク -->
+        <!-- ============ -->
+        <main id="page-tasks" class="page tasks">
+            <div class="task-container">
+                <ul id="todo-list" class="todo-list"></ul>
+                <div class="task-add">
+                    <input id="add-input" class="add-input" placeholder="タスクを追加">
+                </div>
+            </div>
+        </main>
+    </body>
+</html>

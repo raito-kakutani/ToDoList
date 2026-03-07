@@ -1,4 +1,21 @@
 // ------------------------
+// 認証チェック
+// ------------------------
+async function checkAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession()
+    if (!session) {
+        window.location.href = "login.html"
+        return false
+    }
+    return true
+}
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut()
+    window.location.href = "login.html"
+})
+
+// ------------------------
 // タスク定義
 // ------------------------
 const addInput = document.getElementById("add-input")
@@ -56,4 +73,10 @@ addInput.addEventListener("keydown", (e) => {
     }
 })
 
-renderTasks()
+async function init() {
+    const isLoggedIn = await checkAuth()
+    if (!isLoggedIn) return
+    renderTasks()
+}
+
+init()

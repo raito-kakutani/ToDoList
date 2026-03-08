@@ -25,13 +25,14 @@ const today = new Date().toISOString().split('T')[0]//"2026-03-07T03:34:56.000Z"
 
 let tasks = []
 
-//保存処理
-async function saveTasks(id,done) {
-    const { error } = await supabaseClient.from('todos').update({ done: done }).eq('id', id)
-
-    if (error) {
-        console.error(error.message)
-        return
+//保存処理(DELETE or UPDATE)
+async function saveTasks(task) {
+    if (task.deleted) {
+        const { error } = await supabaseClient.from('todos').delete().eq('id', task.id)
+        if (error) console.error('削除失敗:', error.message)
+    } else {
+        const { error } = await supabaseClient.from('todos').update({ done: task.done }).eq('id', task.id)
+        if (error) console.error('更新失敗:', error.message)
     }
 }
 
@@ -49,7 +50,7 @@ function renderTasks() {
         checkbox.addEventListener("change", () => {
             task.done = checkbox.checked
             li.classList.toggle("task-item--done", checkbox.checked)
-            saveTasks()
+            saveTasks(task)
         })
         // テキスト
         const span = document.createElement("span")
@@ -61,7 +62,7 @@ function renderTasks() {
         button.className = "task-delete"
         button.addEventListener("click", () => {
             tasks = tasks.filter(t => t.idx !== task.idx)
-            saveTasks()
+            saveTasks(task)
             renderTasks()
         })
         li.appendChild(checkbox)
@@ -73,7 +74,6 @@ function renderTasks() {
 
 // タスク追加欄の追加処理
 addInput.addEventListener("keydown", async (e) => {
-    console.log('テスト')
     if (!addInput.value) return
     if (e.key === "Enter") {
         const { data: { user } } = await supabaseClient.auth.getUser()

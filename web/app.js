@@ -26,8 +26,8 @@ const today = new Date().toISOString().split('T')[0]//"2026-03-07T03:34:56.000Z"
 let tasks = []
 
 //保存処理(DELETE or UPDATE)
-async function saveTasks(task) {
-    if (task.deleted) {
+async function saveTasks(task, action) {
+    if (action === 'delete') {
         const { error } = await supabaseClient.from('todos').delete().eq('id', task.id)
         if (error) console.error('削除失敗:', error.message)
     } else {
@@ -48,6 +48,7 @@ function renderTasks() {
         checkbox.className = "task-checkbox"
         checkbox.checked = task.done
         checkbox.addEventListener("change", () => {
+            //tasks状態管理
             task.done = checkbox.checked
             li.classList.toggle("task-item--done", checkbox.checked)
             saveTasks(task)
@@ -61,8 +62,10 @@ function renderTasks() {
         button.textContent = "×"
         button.className = "task-delete"
         button.addEventListener("click", () => {
-            tasks = tasks.filter(t => t.idx !== task.idx)
-            saveTasks(task)
+            // tasks状態管理
+            tasks = tasks.filter(t => t.id !== task.id)
+            // DB更新
+            saveTasks(task, 'delete')
             renderTasks()
         })
         li.appendChild(checkbox)
@@ -77,17 +80,20 @@ addInput.addEventListener("keydown", async (e) => {
     if (!addInput.value) return
     if (e.key === "Enter") {
         const { data: { user } } = await supabaseClient.auth.getUser()
-        //insert処理
-        const { error } = await supabaseClient.from('todos').insert({
+        // DB更新 insert処理
+        const { data, error } = await supabaseClient.from('todos').insert({
             user_id: user.id,
             task: addInput.value,
             done: false,
             type: null,
             scheduled_date: today
-            })
+            }).select()
         if (error){
             console.error("タスク追加ができませんでした。")
+            return
         }
+        //tasks状態管理
+        tasks.push(data[0])
         renderTasks()
         addInput.value = ""
     }
@@ -104,7 +110,6 @@ async function init() {
         return
     }
     tasks = data
-    console.log('タスク取得', tasks)
 
     renderTasks()
 }

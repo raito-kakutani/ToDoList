@@ -21,10 +21,19 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
 const addInput = document.getElementById("add-input")
 const todoList = document.getElementById("todo-list")
 
-let tasks = JSON.parse(localStorage.getItem("tasks")) ?? []
+const today = new Date().toISOString().split('T')[0]//"2026-03-07T03:34:56.000Z".split('T') ["2026-03-07", "03:34:56.000Z"]  ← 2つの要素の配列になる
 
-function saveTasks() {
-    localStorage.setItem("tasks", JSON.stringify(tasks))
+let tasks = []
+
+//保存処理(DELETE or UPDATE)
+async function saveTasks(task, action) {
+    if (action === 'delete') {
+        const { error } = await supabaseClient.from('todos').delete().eq('id', task.id)
+        if (error) console.error('削除失敗:', error.message)
+    } else {
+        const { error } = await supabaseClient.from('todos').update({ done: task.done }).eq('id', task.id)
+        if (error) console.error('更新失敗:', error.message)
+    }
 }
 
 function renderTasks() {
@@ -39,9 +48,10 @@ function renderTasks() {
         checkbox.className = "task-checkbox"
         checkbox.checked = task.done
         checkbox.addEventListener("change", () => {
+            //tasks状態管理
             task.done = checkbox.checked
             li.classList.toggle("task-item--done", checkbox.checked)
-            saveTasks()
+            saveTasks(task)
         })
         // テキスト
         const span = document.createElement("span")
@@ -52,8 +62,10 @@ function renderTasks() {
         button.textContent = "×"
         button.className = "task-delete"
         button.addEventListener("click", () => {
-            tasks = tasks.filter(t => t.idx !== task.idx)
-            saveTasks()
+            // tasks状態管理
+            tasks = tasks.filter(t => t.id !== task.id)
+            // DB更新
+            saveTasks(task, 'delete')
             renderTasks()
         })
         li.appendChild(checkbox)
@@ -63,11 +75,25 @@ function renderTasks() {
     })
 }
 
-addInput.addEventListener("keydown", (e) => {
+// タスク追加欄の追加処理
+addInput.addEventListener("keydown", async (e) => {
     if (!addInput.value) return
     if (e.key === "Enter") {
-        tasks.push({ idx: Date.now().toString(), task: addInput.value, done: false })
-        saveTasks()
+        const { data: { user } } = await supabaseClient.auth.getUser()
+        // DB更新 insert処理
+        const { data, error } = await supabaseClient.from('todos').insert({
+            user_id: user.id,
+            task: addInput.value,
+            done: false,
+            type: null,
+            scheduled_date: today
+            }).select()
+        if (error){
+            console.error("タスク追加ができませんでした。")
+            return
+        }
+        //tasks状態管理
+        tasks.push(data[0])
         renderTasks()
         addInput.value = ""
     }
@@ -76,6 +102,15 @@ addInput.addEventListener("keydown", (e) => {
 async function init() {
     const isLoggedIn = await checkAuth()
     if (!isLoggedIn) return
+
+    // 今日のタスクをSupabaseから取得
+    const { data, error } = await supabaseClient.from('todos').select('*').eq('scheduled_date', today)
+    if (error) {
+        console.error('タスク取得エラー:', error.message)
+        return
+    }
+    tasks = data
+
     renderTasks()
 }
 

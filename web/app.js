@@ -1,8 +1,7 @@
-// ------------------------
-// 認証チェック
-// ------------------------
+import { createCalendar } from "./calendar.js"
+
 async function checkAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession()
+    const { data: { session } } = await window.supabaseClient.auth.getSession()
     if (!session) {
         window.location.href = "login.html"
         return false
@@ -11,81 +10,96 @@ async function checkAuth() {
 }
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
-    await supabaseClient.auth.signOut()
+    await window.supabaseClient.auth.signOut()
     window.location.href = "login.html"
 })
 
-// ------------------------
-// タスク定義
-// ------------------------
 const addInput = document.getElementById("add-input")
 const todoList = document.getElementById("todo-list")
+const calendarContainer = document.getElementById("calendar")
 
-const today = new Date().toISOString().split('T')[0]
-const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+function formatLocalDate(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+}
+
+const today = formatLocalDate(new Date())
+const tomorrowDate = new Date()
+tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+const tomorrow = formatLocalDate(tomorrowDate)
 
 let tasks = []
-let currentMode = 'today'
+let currentMode = "today"
+let selectedDate = null
+let calendarApi = null
 
-// ------------------------
-// サイドバー切り替え
-// ------------------------
-const tabButtons = document.querySelectorAll('.tab-btn')
+const tabButtons = document.querySelectorAll(".tab-btn")
 
 tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        tabButtons.forEach(b => b.classList.remove('active'))
-        btn.classList.add('active')
+    btn.addEventListener("click", () => {
+        tabButtons.forEach(button => button.classList.remove("active"))
+        btn.classList.add("active")
+        selectedDate = null
+
+        if (calendarApi) {
+            calendarApi.setSelectedDate(null)
+        }
+
         currentMode = btn.dataset.tab
         fetchTasks()
     })
 })
 
-// ------------------------
-// タスク取得
-// ------------------------
 async function fetchTasks() {
-    let query = supabaseClient.from('todos').select('*')
+    let query = window.supabaseClient.from("todos").select("*")
 
-    if (currentMode === 'today') {
-        query = query.eq('scheduled_date', today)
-    } else if (currentMode === 'tomorrow') {
-        query = query.eq('scheduled_date', tomorrow)
-    } else if (currentMode === 'important') {
-        query = query.eq('type', 'important')
-    } else if (currentMode === 'normal') {
-        query = query.eq('type', 'normal')
+    if (selectedDate) {
+        query = query.eq("scheduled_date", selectedDate)
+    } else if (currentMode === "today") {
+        query = query.eq("scheduled_date", today)
+    } else if (currentMode === "tomorrow") {
+        query = query.eq("scheduled_date", tomorrow)
+    } else if (currentMode === "important") {
+        query = query.eq("type", "important")
+    } else if (currentMode === "normal") {
+        query = query.eq("type", "normal")
     }
 
     const { data, error } = await query
     if (error) {
-        console.error('タスク取得エラー:', error.message)
+        console.error("タスク取得エラー:", error.message)
         return
     }
+
     tasks = data
     renderTasks()
 }
 
-// ------------------------
-// 保存処理(DELETE or UPDATE)
-// ------------------------
 async function saveTasks(task, action) {
-    if (action === 'delete') {
-        const { error } = await supabaseClient.from('todos').delete().eq('id', task.id)
-        if (error) console.error('削除失敗:', error.message)
-    } else {
-        const { error } = await supabaseClient.from('todos').update({ done: task.done }).eq('id', task.id)
-        if (error) console.error('更新失敗:', error.message)
+    if (action === "delete") {
+        const { error } = await window.supabaseClient.from("todos").delete().eq("id", task.id)
+        if (error) console.error("削除エラー:", error.message)
+        return
     }
+
+    const { error } = await window.supabaseClient
+        .from("todos")
+        .update({ done: task.done })
+        .eq("id", task.id)
+
+    if (error) console.error("更新エラー:", error.message)
 }
 
 function renderTasks() {
     todoList.innerHTML = ""
+
     tasks.forEach(task => {
         const li = document.createElement("li")
         li.className = "task-item"
         if (task.done) li.classList.add("task-item--done")
-        // ✓ボックス
+
         const checkbox = document.createElement("input")
         checkbox.type = "checkbox"
         checkbox.className = "task-checkbox"
@@ -95,19 +109,21 @@ function renderTasks() {
             li.classList.toggle("task-item--done", checkbox.checked)
             saveTasks(task)
         })
-        // テキスト
+
         const span = document.createElement("span")
         span.textContent = task.task
         span.className = "task-text"
-        // 削除ボタン
+
         const button = document.createElement("button")
-        button.textContent = "×"
+        button.type = "button"
+        button.textContent = "削除"
         button.className = "task-delete"
         button.addEventListener("click", () => {
-            tasks = tasks.filter(t => t.id !== task.id)
-            saveTasks(task, 'delete')
+            tasks = tasks.filter(item => item.id !== task.id)
+            saveTasks(task, "delete")
             renderTasks()
         })
+
         li.appendChild(checkbox)
         li.appendChild(span)
         li.appendChild(button)
@@ -115,48 +131,57 @@ function renderTasks() {
     })
 }
 
-// タスク追加処理
-addInput.addEventListener("keydown", async (e) => {
+addInput.addEventListener("keydown", async event => {
     if (!addInput.value) return
-    if (e.key === "Enter") {
-        const { data: { user } } = await supabaseClient.auth.getUser()
+    if (event.key !== "Enter") return
 
-        const newTask = {
-            user_id: user.id,
-            task: addInput.value,
-            done: false,
-            type: null,
-            scheduled_date: null
-        }
+    const { data: { user } } = await window.supabaseClient.auth.getUser()
 
-        if (currentMode === 'today') {
-            newTask.scheduled_date = today
-        } else if (currentMode === 'tomorrow') {
-            newTask.scheduled_date = tomorrow
-        } else if (currentMode === 'important') {
-            newTask.type = 'important'
-        } else if (currentMode === 'normal') {
-            newTask.type = 'normal'
-        }
-
-        const { data, error } = await supabaseClient.from('todos').insert(newTask).select()
-        if (error) {
-            console.error("タスク追加ができませんでした。")
-            return
-        }
-        tasks.push(data[0])
-        renderTasks()
-        addInput.value = ""
+    const newTask = {
+        user_id: user.id,
+        task: addInput.value,
+        done: false,
+        type: null,
+        scheduled_date: null
     }
+
+    if (selectedDate) {
+        newTask.scheduled_date = selectedDate
+    } else if (currentMode === "today") {
+        newTask.scheduled_date = today
+    } else if (currentMode === "tomorrow") {
+        newTask.scheduled_date = tomorrow
+    } else if (currentMode === "important") {
+        newTask.type = "important"
+    } else if (currentMode === "normal") {
+        newTask.type = "normal"
+    }
+
+    const { data, error } = await window.supabaseClient.from("todos").insert(newTask).select()
+    if (error) {
+        console.error("タスク追加エラー:", error.message)
+        return
+    }
+
+    tasks.push(data[0])
+    renderTasks()
+    addInput.value = ""
 })
 
 async function init() {
     const isLoggedIn = await checkAuth()
     if (!isLoggedIn) return
 
-    // デフォルトで「今日の予定」をアクティブに
-    document.querySelector('.tab-btn[data-tab="today"]').classList.add('active')
+    calendarApi = createCalendar({
+        container: calendarContainer,
+        selectedDate,
+        onSelectDate: async date => {
+            selectedDate = date
+            await fetchTasks()
+        }
+    })
 
+    document.querySelector('.tab-btn[data-tab="today"]').classList.add("active")
     await fetchTasks()
 }
 

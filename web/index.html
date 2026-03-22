@@ -3,12 +3,12 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="やることに集中しろ!!">
+        <meta name="description" content="シンプルなToDoアプリ">
         <title>ToDo</title>
         <link rel="stylesheet" href="style.css">
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
         <script src="supabase-client.js" defer></script>
-        <script src="app.js" defer></script>
+        <script type="module" src="app.js"></script>
     </head>
     <body>
         <header>
@@ -19,10 +19,8 @@
             <button class="tab-btn" data-tab="today">今日の予定</button>
             <button class="tab-btn" data-tab="tomorrow">明日の予定</button>
             <button class="tab-btn" data-tab="important">重要</button>
-            <button class="tab-btn" data-tab="normal">通常タスク</button>            
-            <div id="calendar">
-                <!-- カレンダーをここに表示 -->
-            </div>
+            <button class="tab-btn" data-tab="normal">通常タスク</button>
+            <div id="calendar"></div>
         </aside>
 
         <!-- ============ -->

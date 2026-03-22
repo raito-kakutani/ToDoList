@@ -1,13 +1,14 @@
-// ログイン済みなら index.html へ
 supabaseClient.auth.getSession().then(({ data: { session } }) => {
-    if (session) window.location.href = "index.html"
+    if (session) {
+        window.location.href = "index.html"
+    }
 })
 
 const form = document.getElementById("login-form")
 const errorEl = document.getElementById("login-error")
 
-form.addEventListener("submit", async (e) => {
-    e.preventDefault()
+form.addEventListener("submit", async event => {
+    event.preventDefault()
     errorEl.textContent = ""
 
     const email = document.getElementById("email").value
@@ -16,7 +17,7 @@ form.addEventListener("submit", async (e) => {
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password })
 
     if (error) {
-        errorEl.textContent = "メールアドレスまたはパスワードが違います"
+        errorEl.textContent = "メールアドレスまたはパスワードが正しくありません。"
         return
     }
 
